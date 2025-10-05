@@ -16,6 +16,7 @@ const icons = {
   Activity: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
   Security: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>,
   Link: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
+  Brain: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
 };
 
 
@@ -60,6 +61,8 @@ export default function App() {
         return <OneTouchTradePage />;
       case 'scalper':
         return <ScalperPage />;
+      case 'ai-quant':
+        return <AIQuantAnalysisPage />;
       case 'settings':
           return <SettingsPage/>;
       default:
@@ -92,6 +95,8 @@ const Sidebar = ({ activePage, setActivePage }) => (
             <button onClick={() => setActivePage('one-touch')} className={`block p-2 rounded-lg transition-colors ${activePage === 'one-touch' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Zap /></button>
             {/* New Scalper Terminal Page */}
             <button onClick={() => setActivePage('scalper')} className={`block p-2 rounded-lg transition-colors ${activePage === 'scalper' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Activity /></button>
+            {/* AI Quant Analysis Page */}
+            <button onClick={() => setActivePage('ai-quant')} className={`block p-2 rounded-lg transition-colors ${activePage === 'ai-quant' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Brain /></button>
         </nav>
     </div>
     <div className="space-y-6">
@@ -414,6 +419,304 @@ const ScalperPage = () => {
                     <div>
                          <p className="text-sm text-gray-400">Open Positions</p>
                         <p className="text-xl font-mono font-bold text-white">4 Lots</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- AI Quant Analysis Page with TradingView Integration ---
+
+const AIQuantAnalysisPage = () => {
+    const [selectedIndex, setSelectedIndex] = useState('NIFTY');
+    const [timeframe, setTimeframe] = useState('5m');
+    const [showRecommendations, setShowRecommendations] = useState(true);
+
+    // Mock AI recommendations data for each index
+    const aiRecommendations = {
+        NIFTY: {
+            signal: 'BULLISH',
+            confidence: 87,
+            targetPrice: 18850,
+            stopLoss: 18420,
+            strategy: 'Buy Call Options',
+            recommendation: 'NIFTY 18700 CE',
+            rationale: 'Strong momentum breakout with RSI divergence. Volume confirmation at key support levels.',
+            pcr: 1.15,
+            maxPain: 18500,
+            vix: 14.2,
+            sentiment: 'Strongly Bullish'
+        },
+        BANKNIFTY: {
+            signal: 'BEARISH',
+            confidence: 74,
+            targetPrice: 43200,
+            stopLoss: 44100,
+            strategy: 'Buy Put Options',
+            recommendation: 'BANKNIFTY 43500 PE',
+            rationale: 'Banking sector showing weakness. FII selling pressure and credit concerns.',
+            pcr: 0.85,
+            maxPain: 43800,
+            vix: 16.8,
+            sentiment: 'Moderately Bearish'
+        },
+        FINNIFTY: {
+            signal: 'NEUTRAL',
+            confidence: 62,
+            targetPrice: 19600,
+            stopLoss: 19300,
+            strategy: 'Iron Condor',
+            recommendation: 'FINNIFTY 19400-19600 Range',
+            rationale: 'Consolidation phase. Low volatility suggests range-bound movement.',
+            pcr: 1.05,
+            maxPain: 19450,
+            vix: 13.5,
+            sentiment: 'Neutral'
+        }
+    };
+
+    const currentReco = aiRecommendations[selectedIndex];
+
+    const TradingViewChart = ({ symbol, timeframe }) => {
+        // TradingView widget placeholder - in real implementation, you'd use the TradingView widget
+        return (
+            <div className="glass-card p-4 rounded-xl h-96">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white">{symbol} Advanced Chart</h3>
+                    <div className="flex gap-2">
+                        {['1m', '5m', '15m', '1h', '1d'].map(tf => (
+                            <button
+                                key={tf}
+                                onClick={() => setTimeframe(tf)}
+                                className={`px-3 py-1 rounded text-xs font-medium ${
+                                    timeframe === tf 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                }`}
+                            >
+                                {tf}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="h-80 bg-gray-900 rounded-lg flex flex-col items-center justify-center">
+                    <div className="text-center text-gray-400">
+                        <div className="text-lg font-semibold mb-2">📈 TradingView Chart</div>
+                        <div className="text-sm">Live {symbol} chart with AI indicators</div>
+                        <div className="text-xs mt-1">Timeframe: {timeframe}</div>
+                        <div className="text-xs text-blue-400 mt-2">
+                            ✨ AI-powered technical analysis overlay
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const AISignalCard = ({ data }) => {
+        const signalColor = data.signal === 'BULLISH' ? 'text-green-400' : 
+                           data.signal === 'BEARISH' ? 'text-red-400' : 'text-yellow-400';
+        const signalBg = data.signal === 'BULLISH' ? 'bg-green-600' : 
+                        data.signal === 'BEARISH' ? 'bg-red-600' : 'bg-yellow-600';
+        
+        return (
+            <div className="glass-card p-4 rounded-xl">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-white mb-1">AI Signal</h3>
+                        <div className="flex items-center gap-2">
+                            <span className={`text-xl font-bold ${signalColor}`}>{data.signal}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${signalBg} text-white`}>
+                                {data.confidence}% confidence
+                            </span>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-sm text-gray-400">Recommendation</div>
+                        <div className="text-white font-semibold">{data.recommendation}</div>
+                    </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-gray-400">Strategy:</span>
+                        <span className="text-white">{data.strategy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-400">Target:</span>
+                        <span className="text-green-400">₹{data.targetPrice}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-400">Stop Loss:</span>
+                        <span className="text-red-400">₹{data.stopLoss}</span>
+                    </div>
+                </div>
+                
+                <div className="mt-3 p-3 bg-gray-900 rounded-lg">
+                    <div className="text-xs text-gray-400 mb-1">AI Rationale:</div>
+                    <div className="text-sm text-gray-300">{data.rationale}</div>
+                </div>
+            </div>
+        );
+    };
+
+    const QuantMetrics = ({ data }) => (
+        <div className="glass-card p-4 rounded-xl">
+            <h3 className="text-lg font-semibold text-white mb-4">Quant Metrics</h3>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-gray-900 rounded-lg">
+                    <div className="text-xs text-gray-400">Put-Call Ratio</div>
+                    <div className="text-xl font-bold text-white">{data.pcr}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        {data.pcr > 1.2 ? 'Oversold' : data.pcr < 0.8 ? 'Overbought' : 'Neutral'}
+                    </div>
+                </div>
+                <div className="text-center p-3 bg-gray-900 rounded-lg">
+                    <div className="text-xs text-gray-400">Max Pain</div>
+                    <div className="text-xl font-bold text-white">₹{data.maxPain}</div>
+                </div>
+                <div className="text-center p-3 bg-gray-900 rounded-lg">
+                    <div className="text-xs text-gray-400">VIX Level</div>
+                    <div className="text-xl font-bold text-white">{data.vix}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        {data.vix > 20 ? 'High Fear' : data.vix < 12 ? 'Low Fear' : 'Moderate'}
+                    </div>
+                </div>
+                <div className="text-center p-3 bg-gray-900 rounded-lg">
+                    <div className="text-xs text-gray-400">Sentiment</div>
+                    <div className={`text-sm font-semibold ${
+                        data.sentiment.includes('Bullish') ? 'text-green-400' : 
+                        data.sentiment.includes('Bearish') ? 'text-red-400' : 'text-yellow-400'
+                    }`}>
+                        {data.sentiment}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-3xl font-bold text-white">🧠 AI Quant Analysis</h2>
+                <div className="flex items-center gap-4">
+                    <div className="flex gap-2">
+                        {['NIFTY', 'BANKNIFTY', 'FINNIFTY'].map(index => (
+                            <button
+                                key={index}
+                                onClick={() => setSelectedIndex(index)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                    selectedIndex === index
+                                        ? 'bg-blue-600 text-white shadow-lg'
+                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                }`}
+                            >
+                                {index}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => setShowRecommendations(!showRecommendations)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            showRecommendations
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                    >
+                        {showRecommendations ? '✅ Live Signals' : '⏸️ Paused'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* Main Chart Section */}
+                <div className="xl:col-span-2 space-y-6">
+                    <TradingViewChart symbol={selectedIndex} timeframe={timeframe} />
+                    
+                    {showRecommendations && (
+                        <div className="glass-card p-4 rounded-xl">
+                            <h3 className="text-lg font-semibold text-white mb-4">📊 Live AI Analysis</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div className="bg-gray-900 p-3 rounded-lg">
+                                    <div className="text-gray-400 mb-1">Technical Score</div>
+                                    <div className="text-white font-bold">{currentReco.confidence}/100</div>
+                                    <div className="text-xs text-gray-500">AI Confidence</div>
+                                </div>
+                                <div className="bg-gray-900 p-3 rounded-lg">
+                                    <div className="text-gray-400 mb-1">Momentum</div>
+                                    <div className={`font-bold ${
+                                        currentReco.signal === 'BULLISH' ? 'text-green-400' : 
+                                        currentReco.signal === 'BEARISH' ? 'text-red-400' : 'text-yellow-400'
+                                    }`}>
+                                        {currentReco.signal}
+                                    </div>
+                                </div>
+                                <div className="bg-gray-900 p-3 rounded-lg">
+                                    <div className="text-gray-400 mb-1">Risk Level</div>
+                                    <div className="text-white font-bold">
+                                        {currentReco.confidence > 80 ? 'LOW' : 
+                                         currentReco.confidence > 60 ? 'MODERATE' : 'HIGH'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Sidebar with AI Signals and Metrics */}
+                <div className="space-y-6">
+                    {showRecommendations && <AISignalCard data={currentReco} />}
+                    <QuantMetrics data={currentReco} />
+                    
+                    <div className="glass-card p-4 rounded-xl">
+                        <h3 className="text-lg font-semibold text-white mb-4">⚡ Quick Actions</h3>
+                        <div className="space-y-3">
+                            <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors">
+                                Execute AI Strategy
+                            </button>
+                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors">
+                                Backtest Strategy
+                            </button>
+                            <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 rounded-lg transition-colors">
+                                Set Alert
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="glass-card p-4 rounded-xl">
+                        <h3 className="text-lg font-semibold text-white mb-4">🎯 AI Features</h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <span className="text-gray-300">Real-time pattern recognition</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <span className="text-gray-300">Options flow analysis</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <span className="text-gray-300">Volatility prediction</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <span className="text-gray-300">Risk-adjusted recommendations</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/30 rounded-xl">
+                <div className="flex items-start gap-3">
+                    <div className="text-blue-400 text-xl">ℹ️</div>
+                    <div>
+                        <div className="text-blue-300 font-semibold mb-1">TradingView Integration</div>
+                        <div className="text-sm text-blue-200/80">
+                            Charts powered by TradingView's free widgets with real-time data for NIFTY, BANK NIFTY, and FIN NIFTY. 
+                            AI analysis combines technical indicators, options flow, and quantitative models for enhanced decision-making.
+                        </div>
                     </div>
                 </div>
             </div>
