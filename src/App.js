@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { marketDataAPI, aiAPI, apiUtils } from './services/api';
+import { TradingViewWidget, LightweightChartsWidget } from './components/TradingViewWidget';
 
 // --- (Existing Icons) ---
 const icons = {
@@ -49,24 +51,22 @@ const orderBookData = [
 
 // --- Main App Component ---
 export default function App() {
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState('ai-quant');
 
   const renderPage = () => {
     switch (activePage) {
+      case 'ai-quant':
+        return <AIQuantAnalysisPage />;
+      case 'unified-trading':
+        return <UnifiedTradingPage />;
       case 'dashboard':
         return <DashboardPage />;
       case 'option-chain':
         return <OptionChainPage />;
-      case 'one-touch':
-        return <OneTouchTradePage />;
-      case 'scalper':
-        return <ScalperPage />;
-      case 'ai-quant':
-        return <AIQuantAnalysisPage />;
       case 'settings':
           return <SettingsPage/>;
       default:
-        return <DashboardPage />;
+        return <AIQuantAnalysisPage />;
     }
   };
 
@@ -90,13 +90,12 @@ const Sidebar = ({ activePage, setActivePage }) => (
     <div>
         <div className="w-10 h-10 bg-blue-600 rounded-lg mb-10 grid place-items-center font-bold text-xl text-white">F</div>
         <nav className="space-y-6">
+            {/* AI Quant Analysis Page - Now First */}
+            <button onClick={() => setActivePage('ai-quant')} className={`block p-2 rounded-lg transition-colors ${activePage === 'ai-quant' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Brain /></button>
+            {/* Unified Trading Page (One-Touch + Scalper combined) */}
+            <button onClick={() => setActivePage('unified-trading')} className={`block p-2 rounded-lg transition-colors ${activePage === 'unified-trading' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Zap /></button>
             <button onClick={() => setActivePage('dashboard')} className={`block p-2 rounded-lg transition-colors ${activePage === 'dashboard' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.LayoutDashboard /></button>
             <button onClick={() => setActivePage('option-chain')} className={`block p-2 rounded-lg transition-colors ${activePage === 'option-chain' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.List /></button>
-            <button onClick={() => setActivePage('one-touch')} className={`block p-2 rounded-lg transition-colors ${activePage === 'one-touch' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Zap /></button>
-            {/* New Scalper Terminal Page */}
-            <button onClick={() => setActivePage('scalper')} className={`block p-2 rounded-lg transition-colors ${activePage === 'scalper' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Activity /></button>
-            {/* AI Quant Analysis Page */}
-            <button onClick={() => setActivePage('ai-quant')} className={`block p-2 rounded-lg transition-colors ${activePage === 'ai-quant' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Brain /></button>
         </nav>
     </div>
     <div className="space-y-6">
@@ -272,34 +271,353 @@ const BrokerAPISettingsPanel = () => {
 };
 
 const IntegrationsPanel = () => {
-    const integrations = [
-        { name: 'TradingView', description: 'Link your premium TradingView account for advanced charting.', status: 'Not Linked', color: 'red-500', action: 'Link Account' },
-        { name: 'Finversia API', description: 'A common data feed for market data and analysis.', status: 'Configured', color: 'green-500', action: 'Update Config' },
+    const [activeSection, setActiveSection] = useState('charting');
+    const [tierFilter, setTierFilter] = useState('all'); // 'all', 'free', 'premium'
+    
+    const integrations = {
+        charting: [
+            { 
+                name: 'TradingView Premium', 
+                description: 'Advanced charting with indicators, alerts, and replay features', 
+                status: 'Not Connected', 
+                color: 'red-500', 
+                action: 'Connect Account',
+                fields: ['Username', 'API Key', 'Session Token'],
+                tier: 'premium',
+                pricing: '$14.95/month'
+            },
+            { 
+                name: 'TradingView Basic (Free)', 
+                description: 'Essential charting with basic indicators and limited features', 
+                status: 'Available', 
+                color: 'green-500', 
+                action: 'Enable Free',
+                fields: ['Public Widget URL'],
+                tier: 'free',
+                pricing: 'Free'
+            },
+            { 
+                name: 'ChartIQ', 
+                description: 'Professional-grade HTML5 charting library', 
+                status: 'Available', 
+                color: 'yellow-500', 
+                action: 'Enable',
+                fields: ['License Key'],
+                tier: 'premium',
+                pricing: 'Enterprise'
+            },
+            { 
+                name: 'Lightweight Charts (Free)', 
+                description: 'Open-source TradingView charting library', 
+                status: 'Available', 
+                color: 'green-500', 
+                action: 'Enable Free',
+                fields: ['Chart Configuration'],
+                tier: 'free',
+                pricing: 'Free'
+            }
+        ],
+        data: [
+            { 
+                name: 'NSE/BSE Live Data (Premium)', 
+                description: 'Real-time market data feed from Indian exchanges', 
+                status: 'Connected', 
+                color: 'green-500', 
+                action: 'Manage',
+                fields: ['Vendor ID', 'Data Feed URL', 'Authentication Token'],
+                tier: 'premium',
+                pricing: '$50/month'
+            },
+            { 
+                name: 'Yahoo Finance API (Free)', 
+                description: 'Free historical and delayed real-time data', 
+                status: 'Configured', 
+                color: 'green-500', 
+                action: 'Update',
+                fields: ['Rate Limit Configuration'],
+                tier: 'free',
+                pricing: 'Free (15min delay)'
+            },
+            { 
+                name: 'Alpha Vantage Premium', 
+                description: 'Financial data API for technical indicators', 
+                status: 'Not Connected', 
+                color: 'red-500', 
+                action: 'Setup',
+                fields: ['API Key', 'Premium Plan'],
+                tier: 'premium',
+                pricing: '$49.99/month'
+            },
+            { 
+                name: 'Alpha Vantage Free', 
+                description: 'Limited free tier with 5 API calls per minute', 
+                status: 'Available', 
+                color: 'yellow-500', 
+                action: 'Enable Free',
+                fields: ['Free API Key'],
+                tier: 'free',
+                pricing: 'Free (5 calls/min)'
+            },
+            { 
+                name: 'IEX Cloud Free', 
+                description: 'Free financial data with generous limits', 
+                status: 'Available', 
+                color: 'green-500', 
+                action: 'Enable Free',
+                fields: ['Public Token'],
+                tier: 'free',
+                pricing: 'Free (100K calls/month)'
+            },
+            { 
+                name: 'Quandl/Nasdaq Free', 
+                description: 'Free economic and financial datasets', 
+                status: 'Available', 
+                color: 'green-500', 
+                action: 'Enable Free',
+                fields: ['API Key'],
+                tier: 'free',
+                pricing: 'Free (limited datasets)'
+            }
+        ],
+        notifications: [
+            { 
+                name: 'Telegram Bot', 
+                description: 'Send trade alerts and P&L updates to Telegram', 
+                status: 'Connected', 
+                color: 'green-500', 
+                action: 'Configure',
+                fields: ['Bot Token', 'Chat ID', 'Channel ID']
+            },
+            { 
+                name: 'Email SMTP', 
+                description: 'Email notifications for important trading events', 
+                status: 'Not Configured', 
+                color: 'red-500', 
+                action: 'Setup',
+                fields: ['SMTP Server', 'Username', 'Password', 'Port']
+            },
+            { 
+                name: 'SMS Gateway', 
+                description: 'Critical alerts via SMS for urgent notifications', 
+                status: 'Available', 
+                color: 'yellow-500', 
+                action: 'Enable',
+                fields: ['Provider API', 'Sender ID', 'Phone Numbers']
+            }
+        ],
+        ai: [
+            { 
+                name: 'OpenAI GPT-4', 
+                description: 'AI-powered market analysis and trade recommendations', 
+                status: 'Connected', 
+                color: 'green-500', 
+                action: 'Manage',
+                fields: ['API Key', 'Model Version', 'Max Tokens'],
+                tier: 'premium',
+                pricing: '$0.03/1K tokens'
+            },
+            { 
+                name: 'Google Gemini Pro (Free)', 
+                description: 'Free AI analysis with generous rate limits', 
+                status: 'Available', 
+                color: 'green-500', 
+                action: 'Enable Free',
+                fields: ['API Key'],
+                tier: 'free',
+                pricing: 'Free (60 queries/min)'
+            },
+            { 
+                name: 'Hugging Face Models (Free)', 
+                description: 'Open-source ML models for financial analysis', 
+                status: 'Available', 
+                color: 'green-500', 
+                action: 'Enable Free',
+                fields: ['Model Selection', 'Inference API'],
+                tier: 'free',
+                pricing: 'Free (rate limited)'
+            },
+            { 
+                name: 'Custom ML Models', 
+                description: 'Deploy your trained models for price prediction', 
+                status: 'Not Configured', 
+                color: 'red-500', 
+                action: 'Upload',
+                fields: ['Model File', 'Inference Endpoint', 'Authentication'],
+                tier: 'custom',
+                pricing: 'Your infrastructure'
+            },
+            { 
+                name: 'Technical Analysis Library (Free)', 
+                description: 'Open-source TA indicators and strategies', 
+                status: 'Available', 
+                color: 'green-500', 
+                action: 'Enable Free',
+                fields: ['Indicator Configuration'],
+                tier: 'free',
+                pricing: 'Free (local processing)'
+            }
+        ],
+        cloud: [
+            { 
+                name: 'AWS S3', 
+                description: 'Cloud storage for trade logs and backups', 
+                status: 'Connected', 
+                color: 'green-500', 
+                action: 'Manage',
+                fields: ['Access Key', 'Secret Key', 'Bucket Name', 'Region']
+            },
+            { 
+                name: 'Redis Cache', 
+                description: 'High-performance caching for real-time data', 
+                status: 'Running', 
+                color: 'green-500', 
+                action: 'Monitor',
+                fields: ['Host', 'Port', 'Password', 'Database']
+            },
+            { 
+                name: 'PostgreSQL', 
+                description: 'Primary database for trade history and user data', 
+                status: 'Connected', 
+                color: 'green-500', 
+                action: 'Optimize',
+                fields: ['Connection String', 'Max Connections', 'Backup Schedule']
+            }
+        ]
+    };
+    
+    const sections = [
+        { key: 'charting', label: 'Charting & Visualization', icon: '📈' },
+        { key: 'data', label: 'Data Sources', icon: '📊' },
+        { key: 'notifications', label: 'Alerts & Notifications', icon: '🔔' },
+        { key: 'ai', label: 'AI & Machine Learning', icon: '🧠' },
+        { key: 'cloud', label: 'Cloud & Infrastructure', icon: '☁️' }
     ];
     
     return (
-        <div className="glass-card p-6 rounded-xl space-y-6">
-            <h3 className="text-2xl font-semibold text-white">External Integrations</h3>
-            <p className="text-gray-400">Connect to third-party services to enhance charting and data analysis.</p>
+        <div className="space-y-6">
+            <div className="glass-card p-6 rounded-xl">
+                <h3 className="text-2xl font-semibold text-white mb-2">Production Integrations</h3>
+                <p className="text-gray-400 mb-6">Configure all external services required for live trading</p>
 
-            <div className="space-y-4">
-                {integrations.map(int => (
-                    <div key={int.name} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-900 rounded-lg border border-gray-800 hover:border-blue-600 transition-colors">
-                        <div>
-                            <p className="font-semibold text-white">{int.name}</p>
-                            <p className="text-sm text-gray-500 max-w-md mt-1">{int.description}</p>
-                            <div className="flex items-center text-xs gap-2 mt-2">
-                                <span className={`w-2 h-2 rounded-full bg-${int.color}`}></span>
-                                <span className={`text-${int.color} font-medium`}>{int.status}</span>
+                {/* Integration Categories */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-800 pb-4">
+                    <div className="flex flex-wrap gap-2">
+                        {sections.map(section => (
+                            <button
+                                key={section.key}
+                                onClick={() => setActiveSection(section.key)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                                    activeSection === section.key
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                }`}
+                            >
+                                <span>{section.icon}</span>
+                                {section.label}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    {/* Tier Filter */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">Filter:</span>
+                        <select 
+                            value={tierFilter} 
+                            onChange={(e) => setTierFilter(e.target.value)}
+                            className="bg-gray-800 border border-gray-700 rounded-md px-3 py-1 text-sm text-white focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="all">All Services</option>
+                            <option value="free">Free Only</option>
+                            <option value="premium">Premium Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Integration Items */}
+                <div className="space-y-4">
+                    {integrations[activeSection]?.filter(integration => 
+                        tierFilter === 'all' || integration.tier === tierFilter || 
+                        (tierFilter === 'premium' && ['premium', 'custom'].includes(integration.tier))
+                    ).map(integration => (
+                        <div key={integration.name} className={`p-4 bg-gray-900 rounded-lg border transition-colors ${
+                            integration.tier === 'free' ? 'border-green-700 hover:border-green-600' :
+                            integration.tier === 'premium' ? 'border-blue-700 hover:border-blue-600' :
+                            'border-gray-800 hover:border-blue-600'
+                        }`}>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h4 className="font-semibold text-white">{integration.name}</h4>
+                                        {integration.tier && (
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                integration.tier === 'free' ? 'bg-green-800 text-green-200' :
+                                                integration.tier === 'premium' ? 'bg-blue-800 text-blue-200' :
+                                                'bg-purple-800 text-purple-200'
+                                            }`}>
+                                                {integration.tier.toUpperCase()}
+                                            </span>
+                                        )}
+                                        <div className="flex items-center gap-2">
+                                            <span className={`w-2 h-2 rounded-full bg-${integration.color}`}></span>
+                                            <span className={`text-${integration.color} font-medium text-sm`}>{integration.status}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-400 max-w-md mb-1">{integration.description}</p>
+                                    {integration.pricing && (
+                                        <p className="text-xs font-medium text-gray-300">
+                                            💰 {integration.pricing}
+                                        </p>
+                                    )}
+                                </div>
+                                <button className={`mt-3 sm:mt-0 font-medium py-2 px-4 rounded-md transition-colors ${
+                                    integration.tier === 'free' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                    'bg-blue-600 hover:bg-blue-700 text-white'
+                                }`}>
+                                    {integration.action}
+                                </button>
+                            </div>
+                            
+                            {/* Configuration Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-800">
+                                {integration.fields.map(field => (
+                                    <div key={field} className="text-xs">
+                                        <label className="block text-gray-500 mb-1">{field}</label>
+                                        <input 
+                                            type={field.toLowerCase().includes('password') || field.toLowerCase().includes('token') || field.toLowerCase().includes('key') ? 'password' : 'text'}
+                                            placeholder={`Enter ${field}`}
+                                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+                                        />
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                        <button
-                            className="mt-3 sm:mt-0 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200 shadow-md hover:shadow-lg"
-                        >
-                            {int.action}
-                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* System Health Status */}
+            <div className="glass-card p-4 rounded-xl">
+                <h4 className="text-lg font-semibold text-white mb-4">🔧 System Health & Status</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="bg-gray-900 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-400">API Response Time</span>
+                            <span className="text-green-400 font-bold">&lt; 50ms</span>
+                        </div>
                     </div>
-                ))}
+                    <div className="bg-gray-900 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-400">Data Feed Status</span>
+                            <span className="text-green-400 font-bold">Live</span>
+                        </div>
+                    </div>
+                    <div className="bg-gray-900 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-400">Server Uptime</span>
+                            <span className="text-blue-400 font-bold">99.9%</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -728,20 +1046,177 @@ const AIQuantAnalysisPage = () => {
 
 const DashboardPage = () => {
     const [selectedIndex, setSelectedIndex] = useState('NIFTY 50');
+    const [marketData, setMarketData] = useState({});
+    const [aiAnalysis, setAIAnalysis] = useState({});
+    const [isLoadingData, setIsLoadingData] = useState(false);
+    const [chartType, setChartType] = useState('free'); // 'free' or 'premium'
+
+    // Fetch free market data
+    useEffect(() => {
+        const fetchMarketData = async () => {
+            setIsLoadingData(true);
+            try {
+                // Simulate API calls with fallback to mock data
+                const mockYahooData = {
+                    symbol: selectedIndex,
+                    price: 18540.75 + (Math.random() - 0.5) * 100,
+                    change: (Math.random() - 0.5) * 50,
+                    source: 'Yahoo Finance (Free)'
+                };
+                
+                const mockAiData = {
+                    sentiment: Math.random() > 0.5 ? 'Bullish' : 'Bearish',
+                    confidence: 0.6 + Math.random() * 0.3,
+                    recommendation: Math.random() > 0.5 ? 'Hold' : 'Buy',
+                    timestamp: new Date().toISOString()
+                };
+                
+                setMarketData(mockYahooData);
+                setAIAnalysis(mockAiData);
+            } catch (error) {
+                console.error('Error fetching market data:', error);
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+
+        fetchMarketData();
+        // Refresh data every 30 seconds for free tier
+        const interval = setInterval(fetchMarketData, 30000);
+        
+        return () => clearInterval(interval);
+    }, [selectedIndex]);
+
     return (
         <>
+            {/* Service Status Banner */}
+            <div className="mb-6 p-4 bg-green-900/20 border border-green-700/30 rounded-xl">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="text-green-400 text-lg">🟢</div>
+                        <div>
+                            <div className="text-green-300 font-semibold">Free Services Active</div>
+                            <div className="text-sm text-green-200/80">
+                                Yahoo Finance API • TradingView Basic • Free AI Analysis
+                                {isLoadingData && <span className="ml-2 text-yellow-400">⟳ Updating...</span>}
+                            </div>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setChartType(chartType === 'free' ? 'premium' : 'free')}
+                        className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                    >
+                        Switch to {chartType === 'free' ? 'Premium' : 'Free'} Chart
+                    </button>
+                </div>
+            </div>
+
             <div className="mt-6">
                 <MarketOverview indices={mockIndices} onSelect={setSelectedIndex} selectedIndex={selectedIndex} />
             </div>
             <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-2">
-                    <TradingChart symbol={selectedIndex} />
+                    {/* Enhanced Chart with Free/Premium Toggle */}
+                    <div className="glass-card p-4 rounded-xl mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-white">Chart Analysis</h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                chartType === 'free' ? 'bg-green-800 text-green-200' : 'bg-blue-800 text-blue-200'
+                            }`}>
+                                {chartType.toUpperCase()}
+                            </span>
+                        </div>
+                        
+                        {chartType === 'free' ? (
+                            <div className="h-96 bg-gray-900 rounded-lg flex flex-col items-center justify-center">
+                                <div className="text-gray-400 text-center">
+                                    <div className="text-2xl mb-2">📈</div>
+                                    <div className="font-semibold">Lightweight Charts (Free)</div>
+                                    <div className="text-sm mt-1">Open-source TradingView charting library</div>
+                                    <div className="text-xs text-green-400 mt-2">No subscription required</div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="h-96 bg-gray-900 rounded-lg flex flex-col items-center justify-center">
+                                <div className="text-gray-400 text-center">
+                                    <div className="text-2xl mb-2">📊</div>
+                                    <div className="font-semibold">TradingView Widget (Basic)</div>
+                                    <div className="text-sm mt-1">Limited features in free mode</div>
+                                    <div className="text-xs text-blue-400 mt-2">Upgrade for advanced features</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <PositionsPanel positions={mockPositions} />
                 </div>
                 <div className="space-y-6">
+                    {/* Free AI Analysis Panel */}
+                    <div className="glass-card p-4 rounded-xl">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-white">Free AI Analysis</h3>
+                            <span className="px-2 py-1 text-xs bg-green-800 text-green-200 rounded-full">FREE</span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">Sentiment:</span>
+                                <span className={`font-semibold ${
+                                    aiAnalysis.sentiment === 'Bullish' ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                    {aiAnalysis.sentiment || 'Analyzing...'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">Confidence:</span>
+                                <span className="text-blue-400 font-semibold">
+                                    {aiAnalysis.confidence ? `${(aiAnalysis.confidence * 100).toFixed(0)}%` : '--'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">Recommendation:</span>
+                                <span className="text-yellow-400 font-semibold">
+                                    {aiAnalysis.recommendation || 'Processing...'}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-3 pt-3 border-t border-gray-700">
+                            <div className="text-xs text-gray-400">
+                                Powered by Free AI Models • Updated: {
+                                    aiAnalysis.timestamp 
+                                        ? new Date(aiAnalysis.timestamp).toLocaleTimeString()
+                                        : 'Loading...'
+                                }
+                            </div>
+                        </div>
+                    </div>
+
                     <AiSignalCard suggestion={mockAiSuggestion} />
                     <PortfolioSummary portfolio={mockPortfolio} />
-                    <AiAnalysisPanel analysis={mockAiAnalysis} />
+                    
+                    {/* Market Data Source Status */}
+                    <div className="glass-card p-4 rounded-xl">
+                        <h3 className="text-lg font-semibold text-white mb-3">Data Sources</h3>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-300">Market Data</span>
+                                <span className="text-green-400 text-xs">
+                                    {marketData.source || 'Yahoo Finance (Free)'}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-300">AI Analysis</span>
+                                <span className="text-green-400 text-xs">Free Models</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-300">Charts</span>
+                                <span className="text-green-400 text-xs">
+                                    {chartType === 'free' ? 'Lightweight Charts' : 'TradingView Basic'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     <WatchlistPanel watchlist={mockWatchlist} trades={mockRecentTrades} />
                 </div>
             </div>
@@ -1268,6 +1743,403 @@ const WatchlistPanel = ({ watchlist, trades }) => {
             </div>
         </div>
     );
+};
+
+// --- NEW UNIFIED TRADING PAGE ---
+const UnifiedTradingPage = () => {
+  const [brokerSelected, setBrokerSelected] = useState('');
+  const [exchange, setExchange] = useState('NSE');
+  const [segment, setSegment] = useState('Options');
+  const [symbol, setSymbol] = useState('BANKNIFTY');
+  const [expiryDate, setExpiryDate] = useState('28-Oct-2025');
+  const [callStrike, setCallStrike] = useState('55500');
+  const [putStrike, setPutStrike] = useState('55500');
+  const [quantity, setQuantity] = useState('35');
+  const [productType, setProductType] = useState('Margin');
+  const [orderType, setOrderType] = useState('Market');
+  const [marketProtection, setMarketProtection] = useState('10%');
+  const [predefinedSL, setPredefinedSL] = useState('');
+  const [predefinedTarget, setPredefinedTarget] = useState('');
+  const [positionType, setPositionType] = useState('F&O positions only');
+  const [positionView, setPositionView] = useState('All positions');
+  const [oneClickDisabled, setOneClickDisabled] = useState(false);
+  const [activeTab, setActiveTab] = useState('Positions');
+
+  // Mock current price data
+  const currentPrice = 55589.25;
+  const priceChange = 241.30;
+  const percentChange = 0.44;
+
+  // Mock LTP data for call and put options
+  const callLTP = { price: 798.80, change: 77.85, percent: 10.80 };
+  const putLTP = { price: 441.00, change: -128.75, percent: -22.60 };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'Positions':
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-gray-500 border-b border-gray-800">
+                  <th className="p-2">☑</th>
+                  <th className="p-2">Symbol Name</th>
+                  <th className="p-2">Net</th>
+                  <th className="p-2">Avg Price</th>
+                  <th className="p-2">LTP</th>
+                  <th className="p-2">SL</th>
+                  <th className="p-2">Set SL</th>
+                  <th className="p-2">Target</th>
+                  <th className="p-2">Set Target</th>
+                  <th className="p-2">R. P&L</th>
+                  <th className="p-2">UR. P&L</th>
+                  <th className="p-2">P&L</th>
+                  <th className="p-2">Action</th>
+                  <th className="p-2">Buy...</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="text-center text-gray-400">
+                  <td colSpan="14" className="p-8">No positions to display</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="mt-4 flex justify-between items-center text-sm">
+              <div>
+                <span className="text-gray-400">Net Buy Qty: </span>
+                <span className="text-white font-semibold">0</span>
+                <span className="text-gray-400 ml-4">Net Sell Qty: </span>
+                <span className="text-white font-semibold">0</span>
+              </div>
+              <div>
+                <span className="text-gray-400">MTM: </span>
+                <span className="text-green-400 font-bold">0.00</span>
+              </div>
+            </div>
+          </div>
+        );
+      case 'Order book':
+        return (
+          <div className="text-center text-gray-400 p-8">
+            No pending orders
+          </div>
+        );
+      case 'Trade Book':
+        return (
+          <div className="text-center text-gray-400 p-8">
+            No trades executed today
+          </div>
+        );
+      case 'Holdings':
+        return (
+          <div className="text-center text-gray-400 p-8">
+            Holdings data will appear here
+          </div>
+        );
+      case 'Funds':
+        return (
+          <div className="text-center text-gray-400 p-8">
+            Fund details and margin utilization
+          </div>
+        );
+      case 'Basket order':
+        return (
+          <div className="text-center text-gray-400 p-8">
+            Basket orders will appear here
+          </div>
+        );
+      case 'Refresh Data':
+        return (
+          <div className="text-center text-gray-400 p-8">
+            Data refreshed successfully
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="mt-6">
+      <h2 className="text-3xl font-bold text-white mb-6">⚡ Unified Trading Terminal</h2>
+      
+      {/* Top Control Panel */}
+      <div className="glass-card p-4 rounded-xl mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 text-sm">
+          {/* Broker Selection */}
+          <div className="col-span-2">
+            <label className="block text-gray-400 mb-1">Broker</label>
+            <select 
+              className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white"
+              value={brokerSelected}
+              onChange={(e) => setBrokerSelected(e.target.value)}
+            >
+              <option value="">Please select broker to trade</option>
+              <option value="zerodha">Zerodha</option>
+              <option value="upstox">Upstox</option>
+              <option value="finvasia">Finvasia</option>
+              <option value="icicidirect">ICICI Direct</option>
+            </select>
+          </div>
+
+          {/* Exchange */}
+          <div>
+            <label className="block text-gray-400 mb-1">Exchange</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={exchange} onChange={(e) => setExchange(e.target.value)}>
+              <option value="NSE">NSE</option>
+              <option value="BSE">BSE</option>
+              <option value="MCX">MCX</option>
+            </select>
+          </div>
+
+          {/* Segment */}
+          <div>
+            <label className="block text-gray-400 mb-1">Segment</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={segment} onChange={(e) => setSegment(e.target.value)}>
+              <option value="Options">Options</option>
+              <option value="Futures">Futures</option>
+              <option value="Equity">Equity</option>
+            </select>
+          </div>
+
+          {/* Symbol */}
+          <div>
+            <label className="block text-gray-400 mb-1">Symbol</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+              <option value="BANKNIFTY">BANKNIFTY</option>
+              <option value="NIFTY">NIFTY</option>
+              <option value="FINNIFTY">FINNIFTY</option>
+            </select>
+          </div>
+
+          {/* Expiry Date */}
+          <div>
+            <label className="block text-gray-400 mb-1">Expiry Date</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)}>
+              <option value="28-Oct-2025">28-Oct-2025</option>
+              <option value="31-Oct-2025">31-Oct-2025</option>
+              <option value="07-Nov-2025">07-Nov-2025</option>
+            </select>
+          </div>
+
+          {/* Call Strike */}
+          <div>
+            <label className="block text-gray-400 mb-1">Call Strike</label>
+            <input 
+              type="number" 
+              className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" 
+              value={callStrike} 
+              onChange={(e) => setCallStrike(e.target.value)}
+            />
+          </div>
+
+          {/* Put Strike */}
+          <div>
+            <label className="block text-gray-400 mb-1">Put Strike</label>
+            <input 
+              type="number" 
+              className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" 
+              value={putStrike} 
+              onChange={(e) => setPutStrike(e.target.value)}
+            />
+          </div>
+
+          {/* Quantity */}
+          <div>
+            <label className="block text-gray-400 mb-1">Qty (In Lot: 1)</label>
+            <input 
+              type="number" 
+              className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" 
+              value={quantity} 
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+          </div>
+
+          {/* Product Type */}
+          <div>
+            <label className="block text-gray-400 mb-1">Product Type</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={productType} onChange={(e) => setProductType(e.target.value)}>
+              <option value="Margin">Margin</option>
+              <option value="MIS">MIS</option>
+              <option value="NRML">NRML</option>
+            </select>
+          </div>
+
+          {/* Order Type */}
+          <div>
+            <label className="block text-gray-400 mb-1">Order Type</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={orderType} onChange={(e) => setOrderType(e.target.value)}>
+              <option value="Market">Market</option>
+              <option value="Limit">Limit</option>
+              <option value="SL">SL</option>
+              <option value="SL-M">SL-M</option>
+            </select>
+          </div>
+
+          {/* Market Protection */}
+          <div>
+            <label className="block text-gray-400 mb-1">Market Protection %</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={marketProtection} onChange={(e) => setMarketProtection(e.target.value)}>
+              <option value="10%">10%</option>
+              <option value="5%">5%</option>
+              <option value="15%">15%</option>
+              <option value="20%">20%</option>
+            </select>
+          </div>
+
+          {/* Predefined SL */}
+          <div>
+            <label className="block text-gray-400 mb-1">Predefined SL</label>
+            <input 
+              type="text" 
+              placeholder="Rs..." 
+              className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" 
+              value={predefinedSL} 
+              onChange={(e) => setPredefinedSL(e.target.value)}
+            />
+          </div>
+
+          {/* Predefined Target */}
+          <div>
+            <label className="block text-gray-400 mb-1">Predefined Target</label>
+            <input 
+              type="text" 
+              placeholder="Rs..." 
+              className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" 
+              value={predefinedTarget} 
+              onChange={(e) => setPredefinedTarget(e.target.value)}
+            />
+          </div>
+
+          {/* Position Type */}
+          <div>
+            <label className="block text-gray-400 mb-1">Position Type</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={positionType} onChange={(e) => setPositionType(e.target.value)}>
+              <option value="F&O positions only">F&O positions only</option>
+              <option value="All positions">All positions</option>
+              <option value="Equity only">Equity only</option>
+            </select>
+          </div>
+
+          {/* Position View */}
+          <div>
+            <label className="block text-gray-400 mb-1">Position View</label>
+            <select className="w-full bg-gray-900 border border-gray-700 rounded-md p-2 text-white" value={positionView} onChange={(e) => setPositionView(e.target.value)}>
+              <option value="All positions">All positions</option>
+              <option value="Open positions">Open positions</option>
+              <option value="Closed positions">Closed positions</option>
+            </select>
+          </div>
+
+          {/* Action */}
+          <div>
+            <label className="block text-gray-400 mb-1">Action</label>
+            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md transition-colors">
+              Show Options List
+            </button>
+          </div>
+
+          {/* One Click */}
+          <div className="flex items-end">
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                id="oneClick" 
+                checked={!oneClickDisabled}
+                onChange={(e) => setOneClickDisabled(!e.target.checked)}
+                className="mr-2" 
+              />
+              <label htmlFor="oneClick" className="text-gray-400 text-sm">One click: {oneClickDisabled ? 'Disable' : 'Enable'}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Center Price Display and Trading Buttons */}
+      <div className="glass-card p-6 rounded-xl mb-6">
+        {/* Call Options Row */}
+        <div className="flex items-center justify-between bg-gray-900 p-4 rounded-lg mb-4">
+          <div className="flex items-center gap-4">
+            <p className="font-bold text-xl text-blue-400">{symbol} 251028 CE</p>
+            <p className="text-sm">
+              LTP: <span className="font-bold">{callLTP.price}</span> 
+              <span className={`ml-2 ${callLTP.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                ({callLTP.change >= 0 ? '+' : ''}{callLTP.change} / {callLTP.percent >= 0 ? '+' : ''}{callLTP.percent}%)
+              </span>
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md">
+              Sell Call
+            </button>
+            <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md">
+              Buy Call
+            </button>
+          </div>
+        </div>
+
+        {/* Main Price Display */}
+        <div className="text-center my-6">
+          <p className="text-4xl font-bold text-white">
+            LTP: {currentPrice.toFixed(2)} 
+            <span className={`ml-4 text-lg ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              ({priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}/{percentChange >= 0 ? '+' : ''}{percentChange}%)
+            </span>
+          </p>
+          <p className="text-sm text-gray-400 mt-1">{symbol} Current Price</p>
+          
+          {/* Emergency Action Buttons */}
+          <div className="flex justify-center gap-4 mt-6">
+            <button className="bg-gray-700 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md transition-colors">
+              Close All Positions / F6
+            </button>
+            <button className="bg-gray-700 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md transition-colors">
+              Cancel All Orders / F7
+            </button>
+          </div>
+        </div>
+
+        {/* Put Options Row */}
+        <div className="flex items-center justify-between bg-gray-900 p-4 rounded-lg">
+          <div className="flex gap-2">
+            <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md">
+              Buy Put
+            </button>
+            <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md">
+              Sell Put
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <p className="text-sm">
+              LTP: <span className="font-bold">{putLTP.price}</span> 
+              <span className={`ml-2 ${putLTP.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                ({putLTP.change >= 0 ? '+' : ''}{putLTP.change} / {putLTP.percent >= 0 ? '+' : ''}{putLTP.percent}%)
+              </span>
+            </p>
+            <p className="font-bold text-xl text-orange-400">{symbol} 251028 PE</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Tabs Panel */}
+      <div className="glass-card p-4 rounded-xl">
+        <div className="flex border-b border-gray-800 mb-4 text-sm overflow-x-auto">
+          {['Positions', 'Order book', 'Trade Book', 'Holdings', 'Funds', 'Basket order', 'Refresh Data'].map(tab => (
+            <button 
+              key={tab} 
+              onClick={() => setActiveTab(tab)}
+              className={`pb-2 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === tab ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-500 hover:text-white'}`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+        <div className="min-h-[200px]">
+          {renderTabContent()}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // The custom styling for the glass-card effect, as requested by the original file's comments

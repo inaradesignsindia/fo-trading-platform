@@ -10,13 +10,21 @@
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "react-tradingview-embed": "^3.0.6",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "axios": "^1.6.0",
+    "lightweight-charts": "^4.1.3",
+    "concurrently": "^8.2.2"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "server:install": "cd server && npm install",
+    "dev:full": "concurrently \"npm run server:dev\" \"npm start\"",
+    "build:full": "npm run build && cd server && npm install --production"
   },
   "eslintConfig": {
     "extends": [
