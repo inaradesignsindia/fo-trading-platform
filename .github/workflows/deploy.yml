@@ -1,4 +1,4 @@
-name: Deploy to Netlify
+name: Deploy to Render
 
 on:
   push:
@@ -10,15 +10,15 @@ env:
   NODE_VERSION: '18'
 
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
@@ -32,19 +32,32 @@ jobs:
     - name: Build application
       run: npm run build
       
-    - name: Deploy to Netlify
-      uses: netlify/actions/cli@master
-      with:
-        args: deploy --prod --dir=build --message="Deploy from GitHub Actions"
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      if: failure()
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: |
           build/
           coverage/
+        retention-days: 7
+
+    # Render automatically deploys from GitHub when connected
+    # This workflow validates the build process and runs tests
+    - name: Build Success Notification
+      if: success()
+      run: |
+        echo "✅ Build successful! Tests passed."
+        echo "🚀 Render will deploy automatically from this commit."
+        echo "📊 Build artifacts uploaded for debugging if needed."
+        
+    - name: Comment PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ Build and tests passed! This PR is ready for review and will auto-deploy to Render preview environment.'
+          })
