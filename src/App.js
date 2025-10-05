@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 // --- (Existing Icons) ---
 const icons = {
@@ -87,17 +87,17 @@ const Sidebar = ({ activePage, setActivePage }) => (
     <div>
         <div className="w-10 h-10 bg-blue-600 rounded-lg mb-10 grid place-items-center font-bold text-xl text-white">F</div>
         <nav className="space-y-6">
-            <a href="#" onClick={() => setActivePage('dashboard')} className={`block p-2 rounded-lg transition-colors ${activePage === 'dashboard' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.LayoutDashboard /></a>
-            <a href="#" onClick={() => setActivePage('option-chain')} className={`block p-2 rounded-lg transition-colors ${activePage === 'option-chain' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.List /></a>
-            <a href="#" onClick={() => setActivePage('one-touch')} className={`block p-2 rounded-lg transition-colors ${activePage === 'one-touch' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Zap /></a>
+            <button onClick={() => setActivePage('dashboard')} className={`block p-2 rounded-lg transition-colors ${activePage === 'dashboard' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.LayoutDashboard /></button>
+            <button onClick={() => setActivePage('option-chain')} className={`block p-2 rounded-lg transition-colors ${activePage === 'option-chain' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.List /></button>
+            <button onClick={() => setActivePage('one-touch')} className={`block p-2 rounded-lg transition-colors ${activePage === 'one-touch' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Zap /></button>
             {/* New Scalper Terminal Page */}
-            <a href="#" onClick={() => setActivePage('scalper')} className={`block p-2 rounded-lg transition-colors ${activePage === 'scalper' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Activity /></a>
+            <button onClick={() => setActivePage('scalper')} className={`block p-2 rounded-lg transition-colors ${activePage === 'scalper' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Activity /></button>
         </nav>
     </div>
     <div className="space-y-6">
         {/* Settings page added */}
-        <a href="#" onClick={() => setActivePage('settings')} className={`block p-2 rounded-lg transition-colors ${activePage === 'settings' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Settings /></a>
-        <a href="#" className="block p-2 text-gray-500 hover:text-red-500 transition-colors"><icons.LogOut /></a>
+        <button onClick={() => setActivePage('settings')} className={`block p-2 rounded-lg transition-colors ${activePage === 'settings' ? 'bg-blue-700/50 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}><icons.Settings /></button>
+        <button className="block p-2 text-gray-500 hover:text-red-500 transition-colors" onClick={() => console.log('Logout clicked')}><icons.LogOut /></button>
     </div>
   </aside>
 );
