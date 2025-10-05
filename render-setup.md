@@ -43,6 +43,7 @@ git push -u origin main
 **Render will automatically detect your `render.yaml` file, but you can also configure manually:**
 
 ### Manual Configuration (if needed):
+
 - **Name:** `fo-trading-platform`
 - **Branch:** `main`
 - **Root Directory:** ` ` (leave blank)
@@ -50,6 +51,7 @@ git push -u origin main
 - **Publish Directory:** `build`
 
 ### Advanced Settings:
+
 - **Auto Deploy:** `Yes` (deploys automatically on GitHub pushes)
 - **Pull Request Previews:** `Enabled` (optional)
 
@@ -73,12 +75,14 @@ If your app requires environment variables:
 ## Automatic Deployments
 
 ✅ **Configured GitHub Actions will:**
+
 - Run tests on every push and PR
 - Build the application to verify it compiles
 - Upload build artifacts for debugging
 - Provide status updates on PRs
 
 ✅ **Render will automatically:**
+
 - Deploy on every push to `main` branch
 - Create preview deployments for PRs (if enabled)
 - Provide deployment status and logs
@@ -87,6 +91,7 @@ If your app requires environment variables:
 ## Your Live Site
 
 After deployment completes:
+
 - **Site URL:** `https://fo-trading-platform-xxxx.onrender.com`
 - **Custom domain:** (if configured)
 - **SSL Certificate:** Automatically provisioned
@@ -95,6 +100,7 @@ After deployment completes:
 ## Render vs Netlify Advantages
 
 ✅ **Render Benefits:**
+
 - **Better performance** for React apps
 - **More generous free tier** (750 hours/month)
 - **Integrated backend services** (if you need APIs later)
@@ -105,17 +111,20 @@ After deployment completes:
 ## Troubleshooting
 
 **Build fails on Render?**
+
 - Check the build logs in Render dashboard
 - Verify `package.json` has correct dependencies
 - Ensure `npm run build` works locally
 - Check the `render.yaml` configuration
 
 **GitHub Actions failing?**
+
 - Check Actions tab in GitHub repository
 - Verify Node.js version compatibility
 - Review test failures in the workflow logs
 
 **Want to update the site?**
+
 - Push changes to the `main` branch
 - Render will automatically rebuild and deploy
 - Check deployment progress in Render dashboard
@@ -123,6 +132,7 @@ After deployment completes:
 ## Deployment Status
 
 You can monitor deployments:
+
 - **Render Dashboard:** Real-time build and deploy logs
 - **GitHub Actions:** Test results and build verification
 - **GitHub Repository:** Deployment status badges
@@ -130,11 +140,13 @@ You can monitor deployments:
 ## Advanced Features
 
 **Preview Deployments:**
+
 - Every PR can get its own preview URL
 - Perfect for reviewing changes before merging
 - Automatically updated when PR is updated
 
 **Rollback Capability:**
+
 - Easy rollback to previous deployments
 - Zero-downtime deployments
 - Deployment history and logs

@@ -62,24 +62,27 @@ npm run dev:full
 # Terminal 1: Backend
 npm run server:dev
 
-# Terminal 2: Frontend  
+# Terminal 2: Frontend
 npm start
 ```
 
 ## Free Services Integration
 
 ### Data Sources (No Cost)
+
 - **Yahoo Finance**: 15-minute delayed data, unlimited calls
 - **Alpha Vantage Free**: 5 API calls per minute, 500 calls per day
 - **IEX Cloud**: 100,000 calls per month free tier
 - **Quandl/Nasdaq**: Free economic datasets
 
 ### Charting Solutions
+
 - **TradingView Basic**: Free widgets with limited features
 - **Lightweight Charts**: Open-source TradingView library, fully free
 - **Chart.js**: Alternative free charting library
 
 ### AI Analysis (Free)
+
 - **Hugging Face**: Free inference API with rate limits
 - **Google Gemini Pro**: 60 queries per minute free tier
 - **Technical Analysis Library**: Local processing, no API required
@@ -87,17 +90,20 @@ npm start
 ## Premium Services (Optional Upgrades)
 
 ### Data Feeds
+
 - **NSE/BSE Real-time**: ₹3,000/month for live data
 - **TradingView Premium**: $14.95/month for advanced features
 - **Alpha Vantage Premium**: $49.99/month for unlimited calls
 
 ### AI Services
+
 - **OpenAI GPT-4**: Pay-per-token pricing
 - **Custom ML Models**: Deploy your own models
 
 ## API Endpoints
 
 ### Free Services
+
 ```
 GET  /api/data/yahoo/:symbol        - Yahoo Finance data (free)
 GET  /api/data/alphavantage/:symbol - Alpha Vantage free tier
@@ -106,6 +112,7 @@ POST /api/ai/analyze/free           - Free AI analysis
 ```
 
 ### Configuration
+
 ```
 GET  /api/brokers                   - Get broker configurations
 POST /api/brokers/:name             - Update broker settings
@@ -114,6 +121,7 @@ POST /api/integrations/:cat/:svc    - Update integration
 ```
 
 ### System
+
 ```
 GET /api/health                     - System health check
 GET /api/status                     - Service status
@@ -122,16 +130,19 @@ GET /api/status                     - Service status
 ## Browser Optimization Features
 
 ### Responsive Design
+
 - Mobile-first approach with Tailwind CSS
 - Optimized for tablets and desktop trading setups
 - Touch-friendly controls for mobile trading
 
 ### Performance
+
 - Lazy loading for heavy components
 - WebSocket connections for real-time data
 - Efficient state management with React hooks
 
 ### Progressive Web App (PWA)
+
 - Offline capability for cached data
 - App-like experience on mobile devices
 - Background sync for trade updates
@@ -139,16 +150,19 @@ GET /api/status                     - Service status
 ## Deployment Options
 
 ### Development
+
 ```bash
 npm run dev:full
 ```
 
 ### Production Build
+
 ```bash
 npm run build:full
 ```
 
 ### Docker Deployment
+
 ```bash
 # Using existing Docker setup
 cd NuralML_AI_PipeLine/docker
@@ -157,20 +171,21 @@ docker-compose up -d
 
 ## Free vs Premium Comparison
 
-| Feature | Free Version | Premium Version |
-|---------|--------------|-----------------|
-| Market Data | 15-min delay | Real-time |
-| API Calls | Rate limited | Unlimited |
-| AI Analysis | Basic models | Advanced GPT-4 |
-| Charts | Basic widgets | Full TradingView |
-| Indicators | 5-10 basic | 100+ advanced |
-| Alerts | Email only | SMS + Telegram |
+| Feature     | Free Version  | Premium Version  |
+| ----------- | ------------- | ---------------- |
+| Market Data | 15-min delay  | Real-time        |
+| API Calls   | Rate limited  | Unlimited        |
+| AI Analysis | Basic models  | Advanced GPT-4   |
+| Charts      | Basic widgets | Full TradingView |
+| Indicators  | 5-10 basic    | 100+ advanced    |
+| Alerts      | Email only    | SMS + Telegram   |
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Backend not starting**
+
    ```bash
    cd server
    npm install

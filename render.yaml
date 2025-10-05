@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: fo-trading-platform
+    name: fo-trading-platform-frontend
     env: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
@@ -27,3 +27,20 @@ services:
         value: production
       - key: REACT_APP_VERSION
         generateValue: true
+      - key: REACT_APP_API_BASE
+        fromService:
+          type: web
+          name: fo-trading-platform-backend
+          property: host
+          
+  - type: web
+    name: fo-trading-platform-backend
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    healthCheckPath: /api/health
